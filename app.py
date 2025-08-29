@@ -3,7 +3,7 @@ import random
 import time
 import requests
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -12,78 +12,79 @@ SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN")
 SHOP_URL = os.getenv("SHOP_URL")
 VARIANT_ID = os.getenv("VARIANT_ID")
 
+# Sécurité: DRY_RUN=1 (par défaut) => NE PAS créer de vraies commandes
+DRY_RUN = os.getenv("DRY_RUN", "1") == "1"
+
 HEADERS = {
     "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
     "Content-Type": "application/json"
 }
 
-# ============================
-# Stats Shopify réelles
-# ============================
-_cache = {"timestamp": None, "orders": 0, "revenue": 0.0}
+# Fonction pour créer une commande Shopify (ou simuler si DRY_RUN)
+def create_fake_order():
+    prenoms = ["Alex", "Emma", "Lucas", "Léa", "Noah", "Inès"]
+    noms = ["Martin", "Bernard", "Robert", "Richard", "Petit", "Durand"]
+    email = f"{random.choice(prenoms).lower()}.{random.choice(noms).lower()}{random.randint(100, 999)}@gmail.com"
 
-def fetch_today_stats(cache_seconds=120):  # <-- augmenté de 60 à 120
-    """Récupère les commandes réelles du jour avec cache pour éviter l'erreur 429"""
-    now = datetime.utcnow()
-    if _cache["timestamp"] and (now - _cache["timestamp"]).seconds < cache_seconds:
-        return _cache["orders"], _cache["revenue"]
+    order = {
+        "order": {
+            "email": email,
+            "fulfillment_status": "fulfilled",
+            "send_receipt": False,
+            "send_fulfillment_receipt": False,
+            "line_items": [
+                {
+                    "variant_id": VARIANT_ID,
+                    "quantity": 1
+                }
+            ]
+        }
+    }
 
-    try:
-        today = datetime.utcnow().strftime("%Y-%m-%dT00:00:00Z")
-        url = f"https://{SHOP_URL}/admin/api/2023-10/orders.json"
-        params = {"status": "any", "created_at_min": today}
-        response = requests.get(url, headers=HEADERS, params=params)
+    # En mode DRY_RUN: on n'envoie rien à Shopify, on log juste
+    if DRY_RUN:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚫 DRY_RUN actif — (simulation) Commande pour {email}")
+        return True
 
-        if response.status_code == 200:
-            data = response.json()
-            orders = len(data.get("orders", []))
-            revenue = sum(float(o["total_price"]) for o in data.get("orders", []))
-            _cache.update({"timestamp": now, "orders": orders, "revenue": revenue})
-            return orders, revenue
-        else:
-            print(f"❌ Orders read error: {response.status_code} {response.text}")
-            return _cache["orders"], _cache["revenue"]
-    except Exception as e:
-        print(f"❌ Exception orders: {e}")
-        return _cache["orders"], _cache["revenue"]
+    # ATTENTION: n'active pas ceci sur une boutique réelle
+    response = requests.post(
+        f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
+        json=order,
+        headers=HEADERS,
+        timeout=30
+    )
 
-# ============================
-# Fake Sessions + Objectifs
-# ============================
-def generate_fake_sessions():
-    return random.randint(20, 80)
-
-def generate_sales_goal():
-    return random.randint(3000, 5500)
-
-# ============================
-# Main Loop
-# ============================
-if __name__ == "__main__":
-    objectif = generate_sales_goal()
-    print(f"🎯 Objectif du jour (CA) : {objectif} $ (plage 3000-5500)")
-
-    # Test connexion Shopify
-    test_url = f"https://{SHOP_URL}/admin/api/2023-10/shop.json"
-    test_resp = requests.get(test_url, headers=HEADERS)
-    if test_resp.status_code == 200:
-        print("🔐 Shopify check: 200 OK")
+    if response.status_code == 201:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Commande créée avec {email}")
+        return True
     else:
-        print(f"🔐 Shopify check FAILED: {test_resp.status_code}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Erreur : {response.status_code} - {response.text}")
+        return False
 
-    while True:
-        # Stats Shopify
-        orders, revenue = fetch_today_stats()
+# Fonction principale du bot
+def run_bot():
+    total_revenue = 0
+    revenue_target = random.randint(3000, 5000)
+    price = 59.90
 
-        # Fake sessions
-        fake_sessions = generate_fake_sessions()
+    print(f"🎯 Objectif du jour : {revenue_target} $")
+    if DRY_RUN:
+        print("⚠️ DRY_RUN=1 — aucune commande réelle ne sera créée (test/log uniquement).")
 
-        # Progression
-        progress = round((revenue / objectif) * 100, 1) if objectif > 0 else 0
+    while total_revenue < revenue_target:
+        # ✅ plus AUCUNE restriction d’heure — ça tourne dès le lancement
 
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] "
-              f"👥 Sessions(fake): {fake_sessions} | 🧾 Cmds réelles: {orders} | "
-              f"CA réel: {revenue:.2f} $ | Progress: {progress}% de {objectif} $")
+        # 75% de chances de “créer” une commande à chaque passage
+        if random.random() < 0.75:
+            success = create_fake_order()
+            if success:
+                total_revenue += price
+                print(f"📈 Revenu actuel : {round(total_revenue, 2)} $ / {revenue_target} $")
 
-        # 🔑 Pause fixée à 60 sec pour éviter l'erreur 429
-        time.sleep(60)
+        # 🔎 petite pause pour que tu voies la notif rapidement (5–10 sec)
+        pause = random.randint(5, 10)
+        print(f"⏱ Pause de {pause} sec avant prochaine tentative...\n")
+        time.sleep(pause)
+
+if __name__ == "__main__":
+    run_bot()
