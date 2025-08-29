@@ -19,40 +19,14 @@ HEADERS = {
 
 # Fonction pour créer une commande Shopify
 def create_fake_order():
-    prenoms = [
-        # Français
-        "Alex", "Emma", "Lucas", "Léa", "Noah", "Inès", "Chloé", "Camille", "Sophie", "Julie", "Claire",
-        "Adrien", "Thomas", "Nicolas", "Julien", "Élodie", "Manon", "Sarah", "Paul", "Louis", "Hugo",
-        # Africains
-        "Aïcha", "Fatou", "Mariam", "Amina", "Nadia", "Ousmane", "Moussa", "Abdoulaye", "Ibrahim", "Cheikh",
-        # Indiens
-        "Priya", "Ananya", "Lakshmi", "Deepa", "Rani", "Arjun", "Ravi", "Amit", "Sanjay", "Rahul"
-    ]
-
-    noms = [
-        # Français
-        "Martin", "Bernard", "Robert", "Richard", "Petit", "Durand", "Dubois", "Moreau", "Laurent", "Simon",
-        "Michel", "Lefebvre", "Mercier", "Garcia", "David", "Rousseau",
-        # Africains
-        "Diop", "Ba", "Sow", "Ndiaye", "Diallo", "Coulibaly", "Traoré", "Konaté", "Ouattara", "Bamba",
-        # Indiens
-        "Patel", "Kumar", "Sharma", "Gupta", "Reddy", "Nair", "Iyer", "Das", "Chopra", "Singh"
-    ]
-
-    # Différents domaines pour varier les emails
-    domaines = ["gmail.com", "yahoo.com", "hotmail.com", "icloud.com", "outlook.com"]
-
-    prenom = random.choice(prenoms).lower()
-    nom = random.choice(noms).lower()
-    numero = random.randint(100, 9999)
-    domaine = random.choice(domaines)
-
-    email = f"{prenom}.{nom}{numero}@{domaine}"
+    prenoms = ["Alex", "Emma", "Lucas", "Léa", "Noah", "Inès"]
+    noms = ["Martin", "Bernard", "Robert", "Richard", "Petit", "Durand"]
+    email = f"{random.choice(prenoms).lower()}.{random.choice(noms).lower()}{random.randint(100, 999)}@gmail.com"
 
     order = {
         "order": {
             "email": email,
-            "fulfillment_status": "fulfilled",
+            # ⚠️ plus de "fulfillment_status"
             "send_receipt": False,
             "send_fulfillment_receipt": False,
             "line_items": [
@@ -80,17 +54,17 @@ def create_fake_order():
 # Fonction principale du bot
 def run_bot():
     total_revenue = 0
-    revenue_target = random.randint(3000, 5000)
-    price = 59.90
+    revenue_target = random.randint(4700, 5700)  # 🎯 Nouvelle plage
+    price = 49.99
 
     print(f"🎯 Objectif du jour : {revenue_target} $")
 
     while total_revenue < revenue_target:
         now = datetime.now()
 
-        # Actif seulement entre 9h et 21h
+        # Actif entre 9h et 21h (tu peux changer si besoin)
         if 9 <= now.hour <= 21:
-            if random.random() < 0.75:  # 75% de chances de créer une commande
+            if random.random() < 0.75:  # 75% de chances
                 success = create_fake_order()
                 if success:
                     total_revenue += price
