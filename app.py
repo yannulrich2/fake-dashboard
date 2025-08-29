@@ -17,106 +17,99 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-# --- Listes: majorité FR + mix international ---
-FIRST_NAMES = [
-    # Français(es) (majorité, surtout féminin)
-    "Emma","Camille","Chloé","Juliette","Sarah","Manon","Léa","Anaïs","Claire","Sophie",
-    "Élise","Océane","Inès","Lucie","Nina","Aurélie","Amélie","Élodie","Maëlys","Alicia",
-    "Hugo","Lucas","Louis","Mathis","Théo","Clément","Jules","Antoine","Maxime","Alexandre",
-    # Espagnols/Latins
-    "Maria","Isabella","Valentina","Sofia","Camila","Gabriela","Alejandro","Diego","Carlos","Juan",
-    # Africains
-    "Awa","Aminata","Fatou","Mariam","Nadia","Zara","Khadija","Ibrahim","Ousmane","Moussa","Amadou","Yacine",
-    # Indiens
-    "Aarav","Arjun","Vihaan","Rohan","Ananya","Priya","Isha","Diya","Aditi","Saanvi"
+# ---- OBJECTIF DE VENTES ----
+DAILY_TARGET_MIN = 3000
+DAILY_TARGET_MAX = 5500
+
+# ---- NOMS / EMAILS FAKE ----
+first_names = [
+    "Camille", "Léa", "Manon", "Sophie", "Inès", "Clara", "Nina", "Élise", "Sarah", "Emma",
+    "Isabelle", "Aurélie", "Chloé", "Océane", "Anaïs", "Laura", "Valérie", "Mélanie",
+    "Aisha", "Fatima", "Priya", "Ananya", "Kiran",  # Indien / Afrique
+    "Maria", "Carmen", "Isabella", "Sofia", "Lucia",  # Espagnol
+    "Aminata", "Awa", "Nadia", "Yasmina", "Mariam"   # Afrique
 ]
 
-LAST_NAMES = [
-    # Français
-    "Dubois","Lefevre","Moreau","Laurent","Girard","Roux","Noel","Fontaine","Chevalier","Barbier",
-    "Perrin","Renard","Caron","Lemoine","Marchand","Bernard","Petit","Robert","Richard","Durand",
-    # Espagnols/Latins
-    "Garcia","Martinez","Lopez","Hernandez","Rodriguez","Sanchez","Fernandez","Diaz",
-    # Africains
-    "Traoré","Diop","Konaté","Coulibaly","N'Diaye","Ouattara","Bakayoko","Diallo","Sow","Keita",
-    # Indiens
-    "Sharma","Patel","Kumar","Gupta","Singh","Reddy","Chopra","Mehta"
+last_names = [
+    "Dubois", "Lefevre", "Morel", "Fournier", "Lambert", "Rousseau", "Blanc", "Garnier",
+    "Lopez", "Martinez", "Rodriguez", "Fernandez",   # Espagnol
+    "Singh", "Patel", "Kumar", "Sharma",             # Indien
+    "Diop", "Traoré", "Konaté", "Sylla", "Diallo"    # Afrique
 ]
 
-EMAIL_PROVIDERS = [
-    "gmail.com","outlook.com","yahoo.com","protonmail.com","icloud.com",
-    "hotmail.com","aol.com","zoho.com","mail.com","gmx.com",
-    "orange.fr","laposte.net","sfr.fr","free.fr"
-]
+email_domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "protonmail.com"]
 
-def _generate_fake_identity():
-    first = random.choice(FIRST_NAMES)
-    last = random.choice(LAST_NAMES)
-    provider = random.choice(EMAIL_PROVIDERS)
-    email = f"{first.lower()}.{last.lower()}{random.randint(1, 999)}@{provider}"
-    return email
+# ---- FAKE SESSIONS (2k–6k / jour avec pause 5–20 min) ----
+def _tick_fake_sessions():
+    # Avec ~115 cycles/jour (pause moyenne ~12.5 min),
+    # +40 sessions/cycle ≈ 4.6k sessions/jour
+    return random.randint(20, 60)
 
-# Fonction pour créer une commande Shopify
+# ---- VARIABLES GLOBALES ----
+current_revenue = 0
+current_sessions = 0
+daily_target = random.randint(DAILY_TARGET_MIN, DAILY_TARGET_MAX)
+
+# ---- FONCTION POUR FAIRE UNE FAUSSE COMMANDE ----
 def create_fake_order():
-    email = _generate_fake_identity()
+    first = random.choice(first_names)
+    last = random.choice(last_names)
+    email = f"{first.lower()}.{last.lower()}@{random.choice(email_domains)}"
 
     order = {
         "order": {
-            "email": email,
-            "fulfillment_status": "fulfilled",
-            "send_receipt": False,
-            "send_fulfillment_receipt": False,
             "line_items": [
                 {
-                    "variant_id": int(VARIANT_ID),
-                    "quantity": 1
+                    "variant_id": VARIANT_ID,
+                    "quantity": random.randint(1, 3)
                 }
-            ]
+            ],
+            "customer": {
+                "first_name": first,
+                "last_name": last,
+                "email": email
+            }
         }
     }
 
-    response = requests.post(
-        f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
-        json=order,
-        headers=HEADERS,
-        timeout=30
-    )
-
-    if response.status_code == 201:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Commande créée avec {email}")
-        return True
-    else:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Erreur : {response.status_code} - {response.text}")
+    try:
+        response = requests.post(
+            f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
+            json=order,
+            headers=HEADERS
+        )
+        if response.status_code == 201:
+            return True
+        else:
+            print(f"❌ Erreur Shopify: {response.text}")
+            return False
+    except Exception as e:
+        print(f"⚠️ Exception: {e}")
         return False
 
-# Fonction principale du bot
+# ---- FONCTION PRINCIPALE ----
 def run_bot():
-    missing = [k for k, v in {
-        "SHOP_URL": SHOP_URL, "SHOPIFY_ACCESS_TOKEN": SHOPIFY_ACCESS_TOKEN, "VARIANT_ID": VARIANT_ID
-    }.items() if not v]
-    if missing:
-        print("⛔ Variables manquantes :", ", ".join(missing))
-        return
+    global current_revenue, current_sessions
 
-    total_revenue = 0.0
-    revenue_target = random.randint(3000, 5000)  # objectif 3k–5k
-    price = 49.99
+    print(f"🎯 Objectif du jour : {daily_target} $ (revenu entre {DAILY_TARGET_MIN}-{DAILY_TARGET_MAX})")
 
-    print(f"🎯 Objectif du jour : {revenue_target} $ | Boutique: {SHOP_URL}")
+    while True:
+        # --- Sessions fake ---
+        added_sessions = _tick_fake_sessions()
+        current_sessions += added_sessions
 
-    # ⬇️ AUCUNE RESTRICTION D'HEURE : ça tourne direct et en continu
-    while total_revenue < revenue_target:
-        # 75% de chances de créer une commande à chaque passage
-        if random.random() < 0.75:
-            success = create_fake_order()
-            if success:
-                total_revenue += price
-                print(f"📈 Revenu actuel : {round(total_revenue, 2)} $ / {revenue_target} $")
+        # --- Revenus fake ---
+        added_revenue = random.randint(50, 200)
+        current_revenue += added_revenue
 
-        # Pause entre 5 et 20 minutes
-        pause = random.randint(300, 1200)
-        print(f"⏱ Pause de {pause // 60} min avant prochaine tentative...\n")
-        time.sleep(pause)
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] "
+              f"📈 Revenu actuel : {current_revenue} $ — {current_sessions} sessions")
+
+        # Optionnel : simuler aussi des commandes Shopify
+        # success = create_fake_order()
+
+        # Pause aléatoire entre 5 et 20 minutes
+        time.sleep(random.randint(300, 1200))
 
 if __name__ == "__main__":
     run_bot()
