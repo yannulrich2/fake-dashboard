@@ -151,9 +151,12 @@ def run_bot():
         )
 
         # pause 5–20 min (modifie ici pour tester plus vite)
-        pause = random.randint(300, 1200)
-        print(f"⏱ Pause de {pause // 60} min...\n")
-        time.sleep(pause)
+    pause = random.randint(30, 60)
+for i in range(pause, 0, -1):
+    print(f"⏳ Pause... reprise dans {i} sec", end="\r")
+    time.sleep(1)
+print("\nReprise ✅")
+
 
 if __name__ == "__main__":
     run_bot()
