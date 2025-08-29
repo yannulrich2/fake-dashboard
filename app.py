@@ -151,11 +151,13 @@ def run_bot():
         )
 
         # pause 5–20 min (modifie ici pour tester plus vite)
-    pause = random.randint(30, 60)
-for i in range(pause, 0, -1):
+   # Pause courte avec compte à rebours (30 à 60 secondes)
+pause = random.randint(30, 60)  # définit d'abord la variable
+for i in range(pause, 0, -1):   # puis utilise la variable dans la boucle
     print(f"⏳ Pause... reprise dans {i} sec", end="\r")
     time.sleep(1)
 print("\nReprise ✅")
+
 
 
 if __name__ == "__main__":
