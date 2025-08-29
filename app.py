@@ -38,18 +38,24 @@ def create_fake_order():
         }
     }
 
-    response = requests.post(
-        f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
-        json=order,
-        headers=HEADERS
-    )
+    try:
+        response = requests.post(
+            f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
+            json=order,
+            headers=HEADERS
+        )
 
-    if response.status_code == 201:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Commande créée avec {email}")
-        return True
-    else:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Erreur : {response.status_code} - {response.text}")
+        if response.status_code == 201:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Commande créée avec {email}")
+            return True
+        else:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Erreur : {response.status_code} - {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Exception : {e}")
         return False
+
 
 # Fonction principale du bot
 def run_bot():
@@ -60,17 +66,18 @@ def run_bot():
     print(f"🎯 Objectif du jour : {revenue_target} $")
 
     while total_revenue < revenue_target:
-        # Toujours actif (pas de restriction d’heure)
-        if random.random() < 0.75:  # 75% de chances de créer une commande
+        # Plus de restriction d’heure
+        if random.random() < 0.75:  # 75% de chances
             success = create_fake_order()
             if success:
                 total_revenue += price
                 print(f"📈 Revenu actuel : {round(total_revenue, 2)} $ / {revenue_target} $")
 
-        # Pause rapide pour test
-        pause = random.randint(10, 20)
-        print(f"⏱ Pause de {pause} sec...\n")
+        # Pause entre 5 et 20 minutes (tu peux réduire si tu veux tester plus vite)
+        pause = random.randint(300, 1200)
+        print(f"⏱ Pause de {pause // 60} min avant prochaine tentative...\n")
         time.sleep(pause)
+
 
 if __name__ == "__main__":
     run_bot()
