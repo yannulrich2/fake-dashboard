@@ -12,15 +12,12 @@ SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN")
 SHOP_URL = os.getenv("SHOP_URL")
 VARIANT_ID = os.getenv("VARIANT_ID")
 
-# Sécurité: DRY_RUN=1 (par défaut) => NE PAS créer de vraies commandes
-DRY_RUN = os.getenv("DRY_RUN", "1") == "1"
-
 HEADERS = {
     "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
     "Content-Type": "application/json"
 }
 
-# Fonction pour créer une commande Shopify (ou simuler si DRY_RUN)
+# Fonction pour créer une commande Shopify
 def create_fake_order():
     prenoms = ["Alex", "Emma", "Lucas", "Léa", "Noah", "Inès"]
     noms = ["Martin", "Bernard", "Robert", "Richard", "Petit", "Durand"]
@@ -41,17 +38,10 @@ def create_fake_order():
         }
     }
 
-    # En mode DRY_RUN: on n'envoie rien à Shopify, on log juste
-    if DRY_RUN:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚫 DRY_RUN actif — (simulation) Commande pour {email}")
-        return True
-
-    # ATTENTION: n'active pas ceci sur une boutique réelle
     response = requests.post(
         f"https://{SHOP_URL}/admin/api/2024-01/orders.json",
         json=order,
-        headers=HEADERS,
-        timeout=30
+        headers=HEADERS
     )
 
     if response.status_code == 201:
@@ -68,22 +58,18 @@ def run_bot():
     price = 59.90
 
     print(f"🎯 Objectif du jour : {revenue_target} $")
-    if DRY_RUN:
-        print("⚠️ DRY_RUN=1 — aucune commande réelle ne sera créée (test/log uniquement).")
 
     while total_revenue < revenue_target:
-        # ✅ plus AUCUNE restriction d’heure — ça tourne dès le lancement
-
-        # 75% de chances de “créer” une commande à chaque passage
-        if random.random() < 0.75:
+        # Toujours actif (pas de restriction d’heure)
+        if random.random() < 0.75:  # 75% de chances de créer une commande
             success = create_fake_order()
             if success:
                 total_revenue += price
                 print(f"📈 Revenu actuel : {round(total_revenue, 2)} $ / {revenue_target} $")
 
-        # 🔎 petite pause pour que tu voies la notif rapidement (5–10 sec)
-        pause = random.randint(5, 10)
-        print(f"⏱ Pause de {pause} sec avant prochaine tentative...\n")
+        # Pause rapide pour test
+        pause = random.randint(10, 20)
+        print(f"⏱ Pause de {pause} sec...\n")
         time.sleep(pause)
 
 if __name__ == "__main__":
