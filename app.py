@@ -1,4 +1,3 @@
-
 import os
 import random
 import time
@@ -25,15 +24,20 @@ API_VERSION = "2025-01"  # version API à jour
 TZ = pytz.timezone("America/Toronto")
 
 def create_paid_order():
-    prenoms = ["Alex", "Emma", "Lucas", "Léa", "Noah", "Inès"]
-    noms = ["Martin", "Bernard", "Robert", "Richard", "Petit", "Durand"]
-    email = f"{random.choice(prenoms).lower()}.{random.choice(noms).lower()}{random.randint(100, 999)}@gmail.com"
+    # Noms réalistes (utilisés pour le billing name)
+    prenoms = ["Emma", "Lucas", "Alex", "Chloé", "Marc", "Sophie"]
+    noms = ["Petit", "Martin", "Bernard", "Robert", "Lefebvre", "Gagnon"]
+    first_name = random.choice(prenoms)
+    last_name = random.choice(noms)
+    # Email demandé (fixe)
+    email = "emma.petit588@gmail.com"
     now = datetime.now(TZ).isoformat()
 
     order = {
         "order": {
             "email": email,
             "created_at": now,
+            "source_name": "web",   # rendu comme commande venant du site
             "line_items": [
                 {"variant_id": VARIANT_ID, "quantity": 1}
             ],
@@ -45,9 +49,9 @@ def create_paid_order():
                 "gateway": "manual"
             }],
             "billing_address": {
-                "first_name": "Demo",
-                "last_name": "User",
-                "address1": "123 Rue Demo",
+                "first_name": first_name,
+                "last_name": last_name,
+                "address1": "123 Rue Saint-Paul",
                 "city": "Montréal",
                 "province": "QC",
                 "country": "Canada",
@@ -55,7 +59,7 @@ def create_paid_order():
             },
             "send_receipt": False,
             "send_fulfillment_receipt": False,
-            "note": "DEMO_API_ORDER"
+            "note": "automated_order"
         }
     }
 
@@ -63,7 +67,7 @@ def create_paid_order():
     r = requests.post(url, json=order, headers=HEADERS, timeout=30)
 
     if r.status_code in (200, 201):
-        print(f"[{datetime.now(TZ).strftime('%H:%M:%S')}] ✅ Commande créée : {email}")
+        print(f"[{datetime.now(TZ).strftime('%H:%M:%S')}] ✅ Commande créée : {email} ({first_name} {last_name})")
         return 59.90
     else:
         print(f"[{datetime.now(TZ).strftime('%H:%M:%S')}] ❌ {r.status_code} - {r.text}")
