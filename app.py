@@ -18,26 +18,24 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-API_VERSION = "2025-01"  # version API à jour
-
-# Fuseau horaire Canada (Montréal/Toronto)
-TZ = pytz.timezone("America/Toronto")
+API_VERSION = "2025-01"
+TZ = pytz.timezone("America/Toronto")  # fuseau horaire Canada
 
 def create_paid_order():
-    # Noms réalistes (utilisés pour le billing name)
     prenoms = ["Emma", "Lucas", "Alex", "Chloé", "Marc", "Sophie"]
     noms = ["Petit", "Martin", "Bernard", "Robert", "Lefebvre", "Gagnon"]
     first_name = random.choice(prenoms)
     last_name = random.choice(noms)
-    # Email demandé (fixe)
-    email = "emma.petit588@gmail.com"
+
+    # Génération email unique réaliste
+    email = f"{first_name.lower()}.{last_name.lower()}{random.randint(100,999)}@gmail.com"
+
     now = datetime.now(TZ).isoformat()
 
     order = {
         "order": {
             "email": email,
             "created_at": now,
-            "source_name": "web",   # rendu comme commande venant du site
             "line_items": [
                 {"variant_id": VARIANT_ID, "quantity": 1}
             ],
@@ -58,8 +56,7 @@ def create_paid_order():
                 "zip": "H2X 1X1"
             },
             "send_receipt": False,
-            "send_fulfillment_receipt": False,
-            "note": "automated_order"
+            "send_fulfillment_receipt": False
         }
     }
 
@@ -82,17 +79,17 @@ def run_bot():
         return
 
     total_revenue = 0.0
-    revenue_target = 4000.0  # fixe à 4k CA
+    revenue_target = 4000.0  # Objectif fixe : 4k CA/jour
     print(f"🎯 Objectif du jour : {revenue_target}$ | Boutique: {SHOP_URL}")
 
     while total_revenue < revenue_target:
         now = datetime.now(TZ)
-        if 9 <= now.hour <= 21:  # créneaux horaires Canada
+        if 9 <= now.hour <= 21:
             if random.random() < 0.75:
                 total_revenue += create_paid_order()
                 print(f"📈 Revenu actuel : {round(total_revenue, 2)}$ / {revenue_target}$")
 
-        pause = random.randint(300, 1200)  # 5 à 20 min
+        pause = random.randint(300, 1200)  # entre 5 et 20 min
         print(f"⏱ Pause de {pause//60} min...\n")
         time.sleep(pause)
 
